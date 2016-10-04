@@ -1,0 +1,28 @@
+{
+  "name": "ipfsmon",
+  "version": "1.0.0",
+  "description": "Monitor for any changes in your web application and automatically rehash file or directory and post to ipfs for distributed serverless hosting",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "ipfsmon": "./main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yantonsoup/ipfsmon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yantonsoup/ipfsmon/issues"
+  },
+  "homepage": "https://github.com/yantonsoup/ipfsmon#readme",
+  "dependencies": {
+    "commander": "^2.9.0",
+    "ipfs": "^0.16.0",
+    "ipfs-api": "^9.0.0"
+  }
+}
