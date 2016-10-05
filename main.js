@@ -8,6 +8,9 @@ const events = require('events');
 const exec = require('child_process').exec
 const path = require('path');
 
+let isDirectory;
+let cooldown = false;
+
 // exec('ipfs daemon', (error, stdout, stderr) => {
 //   if (error) {
 //     console.error(`exec error: ${error}`);
@@ -18,31 +21,12 @@ const path = require('path');
 // });
 // const util = require('util');
 
-function Watcher(path) {
-  this.dir = fs.lstatSync(path).isDirectory();
-  this.path = path;
-}
+// function Watcher(path) {
+//   this.dir = fs.lstatSync(path).isDirectory();
+//   this.path = path;
+// }
 
-Watcher.prototype = new events.EventEmitter();
-Watcher.prototype.watch = () => {
-  if (this.dir) {
-    fs.readdir(this.path, (err, files) => {
-      if (err) console.error(err);
-      console.log('files in watch', files);
-      this.emit('hash', files);
-    });
-  } else {
-    fs.readFile(this.path, (err, file) => {
-      console.log('inside watch fs.readfile')
-      this.emit('hash', file);
-    });
-  }
-}
-Watcher.prototype.start = () => {
-  console.log(this);
-  console.log(this.path);
-  fs.watchFile(this.path, () => this.watch());
-}
+
 const hashes = [];
 const hashFile = (file, dir = false) => {
   console.log('file, dir in hashfile', file, dir);
@@ -57,7 +41,8 @@ const hashFile = (file, dir = false) => {
       console.log(`stderr: ${stderr}`);
     });
   } else {
-    exec(`ipfs add ${file}`, (error, stdout, stderr) => {
+    console.log('insdie bottom');
+    exec(`ipfs add -r ${file}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return;
@@ -91,7 +76,7 @@ const hashFile = (file, dir = false) => {
   //       throw err
   //     }
   //     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
-  //     callback = (res) => {
+  //     callback = (res) => {`
   //       // let str = '';
   //       // res.on('data', chunk => {
   //       //   str += chunk;
@@ -114,21 +99,33 @@ program
   // .option('-u, --username <user÷name>', 'The user to authenticate as')
   // .option('-p, --password <password>', 'The user\'s password')
   .action(function (file) {
-    exec('pwd', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`exec error: ${error}`);
-        return;
+    // exec('pwd', (error, stdout, stderr) => {
+    //   if (error) {
+    //     console.error(`exec error: ${error}`);
+    //     return;
+    //   }
+    //   let filePath = path.resolve(stdout.trim(), file.trim());
+    //   console.log(filePath);
+    //   hashFile(filePath, fs.lstatSync(filePath).isDirectory());
+    //   console.log('made it past hashfile');
+    //   const watcher = new Watcher(filePath);
+    //   console.log(watcher);
+    //   watcher.on('hash', (files) => {
+    //     hashfile(files, watcher.dir);
+    //   });
+    //   watcher.start();
+    // });
+    isDirectory = fs.lstatSync(file).isDirectory();
+    console.log(`ipfsmon is now watching ${file} [type: ${isDirectory ? "Directory" : "File"}]\nit will rehash and post to ipfs on change`)
+    hashFile(file, isDirectory);
+    fs.watch(file, (e) => {
+      if (!cooldown) {
+        hashFile(file, isDirectory);
+        cooldown = true;
+        setTimeout(() => cooldown = false, 5000)
       }
-      let filePath = path.resolve(stdout.trim(), file.trim());
-      console.log(filePath);
-      hashFile(filePath, fs.lstatSync(filePath).isDirectory());
-      console.log('made it past hashfile');
-      const watcher = new Watcher(filePath);
-      console.log(watcher);
-      watcher.on('hash', (files) => {
-        hashfile(files, watcher.dir);
-      });
-      watcher.start();
-    });
+      
+
+    })
   })
   .parse(process.argv);
