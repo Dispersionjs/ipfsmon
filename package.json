@@ -23,6 +23,7 @@
   "dependencies": {
     "commander": "^2.9.0",
     "ipfs": "^0.16.0",
-    "ipfs-api": "^9.0.0"
+    "ipfs-api": "^9.0.0",
+    "request": "^2.75.0"
   }
 }
