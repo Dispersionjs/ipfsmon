@@ -1,5 +1,4 @@
 #!/usr/bin/env node --harmony
-
 const fs = require('fs');
 const https = require('https');
 const program = require('commander');
@@ -7,116 +6,85 @@ const ipfsAPI = require('ipfs-api')();
 const events = require('events');
 const exec = require('child_process').exec
 const path = require('path');
+const request = require('request');
 
 let isDirectory;
 let cooldown = false;
+let keepTimeline = false;
 
-// exec('ipfs daemon', (error, stdout, stderr) => {
-//   if (error) {
-//     console.error(`exec error: ${error}`);
-//     return;
-//   }
-//   console.log(`stdout: ${stdout}`);
-//   console.log(`stderr: ${stderr}`);
-// });
-// const util = require('util');
-
-// function Watcher(path) {
-//   this.dir = fs.lstatSync(path).isDirectory();
-//   this.path = path;
-// }
-
-
-const hashes = [];
+let hashes = [];
 const hashFile = (file, dir = false) => {
-  console.log('file, dir in hashfile', file, dir);
   if (dir) {
     exec(`ipfs add -r ${file}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return;
       }
-      console.log()
-      console.log(`stdout: ${stdout}`);
-      console.log(`stderr: ${stderr}`);
+      //for Each file in updated directory, rehash the file and send a request to cache
+      //Also add new hashes to "hashes" akak history
+      if (!keepTimeline) hashes = [];
+      stdout.trim().split('\n').forEach((item) => {
+        let hashObj = makeHashObject(item)
+        hashes.push(hashObj)
+        requestHashObject(hashObj);
+      })
+      console.log(hashes);
+
     });
   } else {
-    console.log('insdie bottom');
+    console.log('inside bottom');
     exec(`ipfs add -r ${file}`, (error, stdout, stderr) => {
       if (error) {
         console.error(`exec error: ${error}`);
         return;
       }
-      console.log(`stdout: ${stdout}`);
-      console.log(`stderr: ${stderr}`);
+      //Shift new hash into file update history
+      if (!keepTimeline) hashes = [];
+      let hashObj = makeHashObject(stdout);
+      hashes.push(hashObj)
+      //Make request to generated ipfs hashlink of updated data
+      requestHashObject(hashObj)
+      console.log(hashes)
     });
   }
-
-  // if (fs.lstatSync(file).isDirectory()) {
-  //   ipfsAPI.util.addFromFs(file, { recursive: true }, (err, result) => {
-  //     console.log('file inside hash file callback function: ', file);
-  //     console.log('result inside hshfile', result);
-  //     if (err) {
-  //       throw err
-  //     }
-  //     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
-  //     callback = (res) => {
-
-  //       res.on('error', (err) => {
-  //         console.error(err);
-  //       })
-  //     }
-  //     https.request(options, callback).end()
-  //   });
-  // } else {
-  //       ipfsAPI.util.addFromFs(file, (err, result) => {
-  //     console.log('file inside hash file callback function: ', file);
-  //     console.log('result inside hshfile', result);
-  //     if (err) {
-  //       throw err
-  //     }
-  //     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
-  //     callback = (res) => {`
-  //       // let str = '';
-  //       // res.on('data', chunk => {
-  //       //   str += chunk;
-  //       // })
-  //       // res.on('end', () => console.log(str));
-  //       res.on('error', (err) => {
-  //         console.error(err);
-  //       })
-  //     }
-  //     https.request(options, callback).end()
-  //   });
-  // }
 }
 
+function makeHashObject(hString) {
+  var hashArray = hString.split(' ');
 
+  var hashObj = {
+    [hashArray[1]]: {
+      "file": hashArray[2].trim(),
+      "time": new Date().toUTCString(),
+      "url": "http://ipfs.io/ipfs/" + hashArray[1]
+    }
+  }
+  return hashObj;
+}
 
+function requestHashObject(hashObject) {
+  for (let key in hashObject) {
+    request(hashObject[key]["url"], (err, response, body) => {
+      if (err) {
+        console.log('error making distribute request to IPFS');
+        console.error(err);
+      }
+    })
+  }
+}
 
 program
   .arguments('<file>')
-  // .option('-u, --username <user÷name>', 'The user to authenticate as')
+  .option('-t, --timeline', 'Keep revision timeline')
   // .option('-p, --password <password>', 'The user\'s password')
   .action(function (file) {
-    // exec('pwd', (error, stdout, stderr) => {
-    //   if (error) {
-    //     console.error(`exec error: ${error}`);
-    //     return;
-    //   }
-    //   let filePath = path.resolve(stdout.trim(), file.trim());
-    //   console.log(filePath);
-    //   hashFile(filePath, fs.lstatSync(filePath).isDirectory());
-    //   console.log('made it past hashfile');
-    //   const watcher = new Watcher(filePath);
-    //   console.log(watcher);
-    //   watcher.on('hash', (files) => {
-    //     hashfile(files, watcher.dir);
-    //   });
-    //   watcher.start();
-    // });
+    if (program.timeline) keepTimeline = true;
     isDirectory = fs.lstatSync(file).isDirectory();
     console.log(`ipfsmon is now watching ${file} [type: ${isDirectory ? "Directory" : "File"}]\nit will rehash and post to ipfs on change`)
+    if (!file) {
+      console.error('file not found')
+      process.exit(1);
+    }
     hashFile(file, isDirectory);
     fs.watch(file, (e) => {
       if (!cooldown) {
@@ -124,8 +92,6 @@ program
         cooldown = true;
         setTimeout(() => cooldown = false, 5000)
       }
-      
-
     })
   })
   .parse(process.argv);
