@@ -7,6 +7,8 @@ const ipfsAPI = require('ipfs-api')();
 const events = require('events');
 const exec = require('child_process').exec
 const path = require('path');
+const request = require('request');
+
 
 let isDirectory;
 let cooldown = false;
@@ -36,9 +38,8 @@ const hashFile = (file, dir = false) => {
         console.error(`exec error: ${error}`);
         return;
       }
-      console.log()
-      console.log(`stdout: ${stdout}`);
-      console.log(`stderr: ${stderr}`);
+      
+
     });
   } else {
     console.log('insdie bottom');
@@ -47,49 +48,67 @@ const hashFile = (file, dir = false) => {
         console.error(`exec error: ${error}`);
         return;
       }
-      console.log(`stdout: ${stdout}`);
-      console.log(`stderr: ${stderr}`);
+
+      var hashObj = makeHashObject(stdout);
+      hashes.unshift(hashObj)
+      
+      request()
+      console.log(hashes)y
     });
   }
-
-  // if (fs.lstatSync(file).isDirectory()) {
-  //   ipfsAPI.util.addFromFs(file, { recursive: true }, (err, result) => {
-  //     console.log('file inside hash file callback function: ', file);
-  //     console.log('result inside hshfile', result);
-  //     if (err) {
-  //       throw err
-  //     }
-  //     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
-  //     callback = (res) => {
-
-  //       res.on('error', (err) => {
-  //         console.error(err);
-  //       })
-  //     }
-  //     https.request(options, callback).end()
-  //   });
-  // } else {
-  //       ipfsAPI.util.addFromFs(file, (err, result) => {
-  //     console.log('file inside hash file callback function: ', file);
-  //     console.log('result inside hshfile', result);
-  //     if (err) {
-  //       throw err
-  //     }
-  //     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
-  //     callback = (res) => {`
-  //       // let str = '';
-  //       // res.on('data', chunk => {
-  //       //   str += chunk;
-  //       // })
-  //       // res.on('end', () => console.log(str));
-  //       res.on('error', (err) => {
-  //         console.error(err);
-  //       })
-  //     }
-  //     https.request(options, callback).end()
-  //   });
-  // }
 }
+
+function makeHashObject(hString) {
+  var hashArray = hString.split(' ');
+  // var hashObj = {};
+  var hashObj = {
+    [hashArray[1]]: {
+      "file": hashArray[2].trim(),
+      "time": new Date().toUTCString(),
+      "url": "ipfs.io/ipfs/" + hashArray[1]
+    }
+  }
+  return hashObj;
+}
+
+// if (fs.lstatSync(file).isDirectory()) {
+//   ipfsAPI.util.addFromFs(file, { recursive: true }, (err, result) => {
+//     console.log('file inside hash file callback function: ', file);
+//     console.log('result inside hshfile', result);
+//     if (err) {
+//       throw err
+//     }
+//     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
+//     callback = (res) => {
+
+//       res.on('error', (err) => {
+//         console.error(err);
+//       })
+//     }
+//     https.request(options, callback).end()
+//   });
+// } else {
+//       ipfsAPI.util.addFromFs(file, (err, result) => {
+//     console.log('file inside hash file callback function: ', file);
+//     console.log('result inside hshfile', result);
+//     if (err) {
+//       throw err
+//     }
+//     let options = { host: "ipfs.io", path: `/ipfs/${result[0]["hash"]}` }
+//     callback = (res) => {`
+//       // let str = '';
+//       // res.on('data', chunk => {
+//       //   str += chunk;
+//       // })
+//       // res.on('end', () => console.log(str));
+//       res.on('error', (err) => {
+//         console.error(err);
+//       })
+//     }
+//     https.request(options, callback).end()
+//   });
+// }
+// }
 
 
 
@@ -124,7 +143,7 @@ program
         cooldown = true;
         setTimeout(() => cooldown = false, 5000)
       }
-      
+
 
     })
   })
