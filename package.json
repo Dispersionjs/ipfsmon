@@ -21,9 +21,11 @@
   },
   "homepage": "https://github.com/yantonsoup/ipfsmon#readme",
   "dependencies": {
+    "chokidar": "^1.6.0",
     "commander": "^2.9.0",
     "ipfs": "^0.16.0",
     "ipfs-api": "^9.0.0",
+    "ipfs-daemon": "0.0.3",
     "request": "^2.75.0"
   }
 }
