@@ -77,6 +77,7 @@ const hashFile = (file, dir = false) => {
       //Shift new hash into file update history
       if (!keepTimeline || !log) hashes = [];
       let hashObj = makeHashObject(stdout);
+      console.log(hashObj);
       hashes.push(hashObj)
       //Make request to generated ipfs hashlink of updated data
       requestHashObject(hashObj)
