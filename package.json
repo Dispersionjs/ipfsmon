@@ -1,13 +1,13 @@
 {
   "name": "ipfsmon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Monitor for any changes in your web application and automatically rehash file or directory and post to ipfs for distributed serverless hosting",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "ipfsmon": "./main.js"
+    "ipfsmon": "./index.js"
   },
   "repository": {
     "type": "git",
@@ -23,9 +23,6 @@
   "dependencies": {
     "chokidar": "^1.6.0",
     "commander": "^2.9.0",
-    "ipfs": "^0.16.0",
-    "ipfs-api": "^9.0.0",
-    "ipfs-daemon": "0.0.3",
     "request": "^2.75.0"
   }
 }
